@@ -1,1 +1,702 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#252622">
 
+    <meta
+        name="description"
+        content="Acompanhe o Desafio Anime i Geek, consulte as edições, os números disponíveis e os resultados oficiais."
+    >
+
+    <title>Desafio Anime i Geek</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <script type="module" src="js/app.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+    <div class="container nav">
+
+        <a href="index.html" class="brand" aria-label="Anime i Geek - início">
+            <div class="brand-symbol">A.</div>
+
+            <div class="brand-copy">
+                <strong>ANIME i GEEK</strong>
+                <span>Desafio semanal</span>
+            </div>
+        </a>
+
+        <div class="nav-right">
+
+            <div class="live-indicator">
+                <span class="live-dot" id="liveDot"></span>
+                <span id="editionStatus">CARREGANDO EDIÇÃO</span>
+            </div>
+
+            <button
+                class="profile-badge"
+                id="profileButton"
+                type="button"
+                aria-label="Acessar minha conta"
+                title="Minha conta"
+            >
+                G
+            </button>
+
+        </div>
+    </div>
+</header>
+
+<main class="container">
+
+    <!-- APRESENTAÇÃO -->
+
+    <section class="hero">
+
+        <div class="eyebrow">
+            <span class="eyebrow-line"></span>
+            DESAFIO ANIME i GEEK
+        </div>
+
+        <div class="hero-grid">
+
+            <div>
+                <h1>
+                    Escolha.<br>
+                    Marque.<br>
+                    <span>Conquiste.</span>
+                </h1>
+
+                <p class="hero-description">
+                    Um desafio da comunidade Anime i Geek.
+                    Acompanhe cada edição, consulte os números disponíveis
+                    e veja os resultados publicados oficialmente.
+                    As condições de participação e os prêmios válidos
+                    serão apresentados nas regras de cada edição.
+                </p>
+
+                <div class="hero-actions">
+                    <a href="#participacao" class="primary-link">
+                        Conhecer a edição
+                    </a>
+
+                    <a href="#regras" class="secondary-link">
+                        Consultar regras
+                    </a>
+                </div>
+            </div>
+
+            <div class="hero-side">
+
+                <div class="side-label">
+                    ENCERRAMENTO DA EDIÇÃO
+                </div>
+
+                <div class="timer" aria-label="Contagem regressiva">
+
+                    <div class="time-unit">
+                        <strong id="days">--</strong>
+                        <span>Dias</span>
+                    </div>
+
+                    <div class="time-unit">
+                        <strong id="hours">--</strong>
+                        <span>Horas</span>
+                    </div>
+
+                    <div class="time-unit">
+                        <strong id="minutes">--</strong>
+                        <span>Minutos</span>
+                    </div>
+
+                    <div class="time-unit">
+                        <strong id="seconds">--</strong>
+                        <span>Segundos</span>
+                    </div>
+
+                </div>
+
+                <div class="side-footer" id="deadlineText">
+                    Consultando o calendário da edição...
+                </div>
+
+            </div>
+        </div>
+
+        <div
+            class="status-banner"
+            id="closedBanner"
+            role="status"
+            hidden
+        >
+            A edição não está aceitando novas participações.
+            Consulte as informações oficiais para conhecer os próximos passos.
+        </div>
+
+    </section>
+
+    <!-- VALOR DA PREMIAÇÃO -->
+
+    <section
+        class="accumulated-banner"
+        aria-label="Informações sobre a premiação"
+    >
+
+        <div class="accumulated-copy">
+
+            <div class="accumulated-label">
+                PREMIAÇÃO DA EDIÇÃO
+            </div>
+
+            <div class="accumulated-amount" id="accumulatedValue">
+                A confirmar
+            </div>
+
+            <div class="accumulated-description" id="accumulatedDescription">
+                O valor oficial será publicado após a apuração e validação
+                das receitas elegíveis e das condições da edição.
+            </div>
+
+        </div>
+
+        <div class="accumulated-mark" aria-hidden="true">
+            ↗
+        </div>
+
+    </section>
+
+    <!-- ESTATÍSTICAS -->
+
+    <section class="stats" aria-label="Resumo da edição">
+
+        <article class="stat-card">
+
+            <div class="stat-top">
+                <span class="stat-label">Participantes</span>
+                <span class="stat-icon" aria-hidden="true">♙</span>
+            </div>
+
+            <strong class="stat-number" id="participants">--</strong>
+
+            <div class="stat-note">
+                Total confirmado na edição
+            </div>
+
+        </article>
+
+        <article class="stat-card">
+
+            <div class="stat-top">
+                <span class="stat-label">Total de números</span>
+                <span class="stat-icon" aria-hidden="true">▦</span>
+            </div>
+
+            <strong class="stat-number" id="totalNumbers">--</strong>
+
+            <div class="stat-note" id="availableNote">
+                Consultando disponibilidade
+            </div>
+
+        </article>
+
+        <article class="stat-card">
+
+            <div class="stat-top">
+                <span class="stat-label">Seus números</span>
+                <span class="stat-icon" aria-hidden="true">✳</span>
+            </div>
+
+            <strong class="stat-number" id="myNumbers">0</strong>
+
+            <div class="stat-note">
+                Números vinculados à sua conta
+            </div>
+
+        </article>
+
+    </section>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+
+    <div class="main-grid">
+
+        <section class="main-column">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Seu espaço</h2>
+
+                    <p>
+                        Consulte a edição e acompanhe seus números.
+                    </p>
+                </div>
+
+                <span class="round-tag" id="editionTag">
+                    EDIÇÃO
+                </span>
+
+            </div>
+
+            <!-- PARTICIPAÇÃO -->
+
+            <section class="ticket-panel" id="participacao">
+
+                <div>
+
+                    <div class="ticket-label">
+                        SEUS BILHETES
+                    </div>
+
+                    <div class="ticket-count">
+                        <strong id="ticketCount">--</strong>
+                        <span>bilhetes disponíveis</span>
+                    </div>
+
+                    <div class="ticket-description" id="ticketDescription">
+                        Entre na sua conta para consultar os bilhetes
+                        registrados para você.
+                    </div>
+
+                </div>
+
+                <button
+                    class="ticket-action"
+                    id="profileAction"
+                    type="button"
+                >
+                    Acessar minha conta
+                </button>
+
+            </section>
+
+            <div class="information-note">
+                <strong>Informação:</strong>
+                os bilhetes e números válidos precisam estar registrados
+                no sistema oficial. Esta página não confirma participação
+                apenas pela exibição de informações na tela.
+            </div>
+
+            <!-- GRADE DE NÚMEROS -->
+
+            <section class="number-panel" id="numberSection">
+
+                <div class="number-toolbar">
+
+                    <div>
+                        <h3>Escolha seu número</h3>
+
+                        <p id="numberDescription">
+                            Consulte a disponibilidade dos números da edição.
+                        </p>
+                    </div>
+
+                    <input
+                        class="search-box"
+                        id="searchNumber"
+                        type="number"
+                        inputmode="numeric"
+                        min="1"
+                        step="1"
+                        placeholder="Buscar nº"
+                        aria-label="Buscar número"
+                        autocomplete="off"
+                    >
+
+                </div>
+
+                <div class="legend" aria-label="Legenda dos números">
+
+                    <div class="legend-item">
+                        <span class="legend-dot"></span>
+                        Disponível
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot mine"></span>
+                        Seu número
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-dot taken"></span>
+                        Ocupado
+                    </div>
+
+                </div>
+
+                <div
+                    class="number-grid"
+                    id="numberGrid"
+                    aria-label="Grade de números"
+                >
+                    <div class="empty-state">
+                        Os números serão apresentados após a conexão
+                        com os dados oficiais da edição.
+                    </div>
+                </div>
+
+                <nav
+                    class="pagination"
+                    aria-label="Navegação dos números"
+                >
+
+                    <button
+                        class="page-button"
+                        id="previousPage"
+                        type="button"
+                        disabled
+                    >
+                        ← Anterior
+                    </button>
+
+                    <span class="page-indicator" id="pageIndicator">
+                        Página -- de --
+                    </span>
+
+                    <button
+                        class="page-button"
+                        id="nextPage"
+                        type="button"
+                        disabled
+                    >
+                        Próxima →
+                    </button>
+
+                </nav>
+
+                <div class="grid-footer">
+
+                    <span id="gridSummary">
+                        Aguardando dados oficiais.
+                    </span>
+
+                    <button
+                        class="text-button"
+                        id="clearSearch"
+                        type="button"
+                    >
+                        Limpar busca
+                    </button>
+
+                </div>
+
+            </section>
+
+            <!-- RESULTADOS -->
+
+            <section class="results-section" id="resultados">
+
+                <div class="section-heading">
+
+                    <div>
+                        <h2>Resultados oficiais</h2>
+
+                        <p>
+                            Consulte os resultados publicados pela organização.
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="result-card" id="resultsContainer">
+
+                    <div class="result-symbol">✳</div>
+
+                    <div class="result-copy">
+                        <strong>Nenhum resultado apresentado</strong>
+
+                        <p>
+                            Os resultados serão exibidos aqui após a conclusão
+                            da edição e a publicação oficial da apuração.
+                        </p>
+                    </div>
+
+                </div>
+
+            </section>
+
+        </section>
+
+        <!-- COLUNA LATERAL -->
+
+        <aside class="sidebar">
+
+            <!-- PRÊMIOS -->
+
+            <section class="side-card">
+
+                <div class="side-card-heading">
+
+                    <h3>Prêmios da edição</h3>
+
+                    <span>OFICIAL</span>
+
+                </div>
+
+                <div class="prize-list" id="prizeList">
+
+                    <div class="empty-state">
+                        Os prêmios serão divulgados nas informações oficiais
+                        da edição.
+                    </div>
+
+                </div>
+
+                <div class="carryover">
+
+                    <div class="carryover-label">
+                        SALDO DE EDIÇÕES ANTERIORES
+                    </div>
+
+                    <div class="carryover-value" id="carryoverValue">
+                        A confirmar
+                    </div>
+
+                    <p id="carryoverDescription">
+                        Consulte o regulamento para verificar se existe
+                        alguma regra de acumulação.
+                    </p>
+
+                </div>
+
+            </section>
+
+            <!-- ATIVIDADE -->
+
+            <section class="side-card">
+
+                <div class="side-card-heading">
+
+                    <h3>Atividade recente</h3>
+
+                    <span>EDIÇÃO</span>
+
+                </div>
+
+                <div class="activity-list" id="activityList">
+
+                    <div class="activity-item">
+
+                        <div class="activity-icon">✳</div>
+
+                        <div class="activity-copy">
+
+                            <strong>Bem-vindo ao Desafio Anime i Geek.</strong>
+
+                            <span>
+                                Consulte as regras e as informações oficiais.
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+            <!-- REGRAS -->
+
+            <section class="rules-card" id="regras">
+
+                <h3>Como funciona</h3>
+
+                <div class="rule">
+                    <b>01</b>
+
+                    <span>
+                        Cada edição terá um período de participação
+                        e regras próprias.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>02</b>
+
+                    <span>
+                        A disponibilidade dos números será consultada
+                        no sistema oficial.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>03</b>
+
+                    <span>
+                        A seleção de números dependerá das condições
+                        válidas de participação.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>04</b>
+
+                    <span>
+                        Um número confirmado deverá ficar vinculado
+                        ao participante correspondente.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>05</b>
+
+                    <span>
+                        O encerramento da edição seguirá o calendário
+                        oficial publicado.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>06</b>
+
+                    <span>
+                        Os resultados deverão ser publicados com
+                        informações que permitam sua conferência.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>07</b>
+
+                    <span>
+                        A distribuição de prêmios estará sujeita
+                        ao regulamento e às exigências legais aplicáveis.
+                    </span>
+                </div>
+
+                <div class="rule">
+                    <b>08</b>
+
+                    <span>
+                        Consulte o regulamento completo antes de participar.
+                    </span>
+                </div>
+
+                <a href="#regulamentoCompleto" class="rules-link">
+                    Ler informações do regulamento →
+                </a>
+
+            </section>
+
+        </aside>
+
+    </div>
+
+    <!-- REGULAMENTO -->
+
+    <section
+        class="regulation-section"
+        id="regulamentoCompleto"
+    >
+
+        <div class="section-heading">
+
+            <div>
+                <h2>Regulamento e transparência</h2>
+
+                <p>
+                    Informações importantes sobre a operação do desafio.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="regulation-card">
+
+            <h3>Antes de participar</h3>
+
+            <p>
+                O Desafio Anime i Geek está sendo estruturado para apresentar
+                as informações da edição, as condições de participação,
+                os números registrados, a premiação e os resultados em
+                um ambiente organizado.
+            </p>
+
+            <p>
+                A receita de publicidade e patrocínios deverá ser registrada
+                e conferida antes da definição dos valores destinados aos
+                prêmios. Somente valores efetivamente recebidos e considerados
+                elegíveis pelas regras oficiais poderão integrar esse cálculo.
+            </p>
+
+            <p>
+                Os percentuais de distribuição, os critérios de apuração,
+                a quantidade de prêmios, as condições de elegibilidade e
+                os procedimentos de pagamento deverão constar do regulamento
+                oficial antes da abertura de uma edição real.
+            </p>
+
+            <p>
+                A publicação desta interface, por si só, não significa que
+                uma edição esteja aberta, que haja prêmio garantido ou que
+                qualquer participação tenha sido confirmada.
+            </p>
+
+            <div class="regulation-status" id="regulationStatus">
+                Regulamento oficial e condições de participação:
+                aguardando publicação.
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+<!-- RODAPÉ -->
+
+<footer class="footer">
+
+    <div class="container footer-inner">
+
+        <div>
+
+            <div class="footer-brand">
+                Anime i Geek
+                <span class="footer-divider">/</span>
+                Desafio
+            </div>
+
+            <p>
+                Projeto da comunidade Anime i Geek. As informações exibidas
+                dependem dos registros oficiais do sistema. A confirmação
+                de participação, os valores de premiação e os resultados
+                não devem ser presumidos com base apenas na interface.
+                Consulte o regulamento aplicável à edição.
+            </p>
+
+        </div>
+
+        <div class="footer-label">
+            DESAFIO ANIME i GEEK<br>
+            EDIÇÕES E RESULTADOS
+        </div>
+
+    </div>
+
+</footer>
+
+<!-- AVISOS -->
+
+<div
+    class="toast"
+    id="toast"
+    role="status"
+    aria-live="polite"
+></div>
+
+</body>
+</html>
