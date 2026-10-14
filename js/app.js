@@ -2,20 +2,29 @@
    DESAFIO ANIME I GEEK
    Arquivo principal da interface pública
 
-   Funcionalidades:
+   FUNCIONALIDADES
    - Contagem regressiva para domingo às 22h
-   - Grade demonstrativa de 1.000 números
+   - Grade demonstrativa com 1.000 números
    - Paginação
    - Pesquisa de números
-   - Filtros de visualização
-   - Indicadores da interface
+   - Filtros de visualização, quando disponíveis no HTML
+   - Seleção visual de números
+   - Resumo da grade
    - Notificações toast
+   - Compatibilidade com os elementos do index.html
 
-   IMPORTANTE:
-   Esta versão cuida da interface.
-   A emissão real de bilhetes, as reservas globais,
-   o fechamento da edição, o sorteio e os valores
-   financeiros dependem da integração segura com Firebase.
+   IMPORTANTE
+   Esta versão gerencia somente a interface pública.
+
+   Não realiza:
+   - Reservas reais de números
+   - Emissão de bilhetes
+   - Pagamentos
+   - Registro de receitas
+   - Sorteios oficiais
+   - Confirmação de participação
+
+   Essas operações exigem integração segura com o servidor.
 ========================================================= */
 
 const DesafioAnimeIGeek = (() => {
@@ -25,24 +34,29 @@ const DesafioAnimeIGeek = (() => {
      1. CONFIGURAÇÕES
   ======================================================= */
 
-  const CONFIG = {
+  const CONFIG = Object.freeze({
     totalNumeros: 1000,
     numerosPorPagina: 100,
+
     diaFechamento: 0, // Domingo
     horaFechamento: 22,
     minutoFechamento: 0,
 
-    // Sem backend conectado, os números são apenas demonstração.
-    modoDemonstracao: true
-  };
+    modoDemonstracao: true,
+    duracaoToast: 3500
+  });
 
   const state = {
     paginaAtual: 1,
     pesquisa: '',
     filtro: 'todos',
+
+    // Seleção temporária, mantida apenas na memória.
     numerosSelecionados: new Set(),
+
     numeros: [],
-    temporizador: null
+    temporizador: null,
+    toastTemporizador: null
   };
 
   const elementos = {};
@@ -59,40 +73,20 @@ const DesafioAnimeIGeek = (() => {
     const elemento = obterElemento(id);
 
     if (elemento) {
-      elemento.textContent = texto;
+      elemento.textContent = String(texto);
     }
-  }
-
-  function definirHTML(id, html) {
-    const elemento = obterElemento(id);
-
-    if (elemento) {
-      elemento.innerHTML = html;
-    }
-  }
-
-  function formatarMoeda(valor) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(valor);
   }
 
   function formatarNumero(numero) {
     return new Intl.NumberFormat('pt-BR').format(numero);
   }
 
-  function escaparHTML(valor) {
-    return String(valor)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
-  }
-
   function limitarNumero(numero, minimo, maximo) {
     return Math.min(Math.max(numero, minimo), maximo);
+  }
+
+  function obterElementoSeguro(id) {
+    return elementos[id] || obterElemento(id);
   }
 
   /* =======================================================
@@ -103,36 +97,50 @@ const DesafioAnimeIGeek = (() => {
     const ids = [
       'liveDot',
       'editionStatus',
+
       'days',
       'hours',
       'minutes',
       'seconds',
       'deadlineText',
       'closedBanner',
+
       'accumulatedValue',
       'accumulatedDescription',
+
       'participants',
       'totalNumbers',
       'availableNote',
       'myNumbers',
+
       'editionTag',
       'ticketCount',
       'ticketDescription',
+
+      'profileButton',
       'profileAction',
+
       'searchNumber',
+      'numberFilter',
       'numberDescription',
       'numberGrid',
+
       'previousPage',
       'pageIndicator',
       'nextPage',
       'gridSummary',
       'clearSearch',
+
       'resultsContainer',
+
       'prizeList',
       'carryoverValue',
       'carryoverDescription',
       'activityList',
+
       'regulationStatus',
+      'currentYear',
+
       'toast'
     ];
 
@@ -142,7 +150,7 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     4. INICIALIZAÇÃO DOS NÚMEROS DEMONSTRATIVOS
+     4. INICIALIZAÇÃO DOS NÚMEROS
   ======================================================= */
 
   function inicializarNumeros() {
@@ -150,12 +158,11 @@ const DesafioAnimeIGeek = (() => {
       { length: CONFIG.totalNumeros },
       (_, indice) => ({
         numero: indice + 1,
-        status: 'disponivel'
+        status: 'demonstracao'
       })
     );
 
     renderizarGrade();
-    atualizarResumoGrade();
   }
 
   /* =======================================================
@@ -176,13 +183,7 @@ const DesafioAnimeIGeek = (() => {
     let diasAteDomingo =
       (CONFIG.diaFechamento - agora.getDay() + 7) % 7;
 
-    /*
-      Se já for domingo e o horário de fechamento passou,
-      a contagem aponta para o domingo seguinte.
-
-      O estado oficial de uma edição deverá vir do servidor.
-    */
-
+    // Se domingo às 22h já passou, aponta para o próximo domingo.
     if (diasAteDomingo === 0 && agora >= fechamento) {
       diasAteDomingo = 7;
     }
@@ -243,22 +244,34 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     6. ESTADO VISUAL DA EDIÇÃO
+     6. ESTADO INICIAL DA INTERFACE
   ======================================================= */
 
   function configurarEstadoInicial() {
-    definirTexto('editionStatus', 'Interface demonstrativa');
-    definirTexto('editionTag', 'Edição de demonstração');
+    definirTexto(
+      'editionStatus',
+      'Interface demonstrativa'
+    );
 
-    const indicador = obterElemento('liveDot');
+    definirTexto(
+      'editionTag',
+      'Edição de demonstração'
+    );
+
+    const indicador = obterElementoSeguro('liveDot');
 
     if (indicador) {
       indicador.classList.remove('status-live');
-      indicador.setAttribute('aria-label', 'Modo de demonstração');
+
+      indicador.setAttribute(
+        'aria-label',
+        'Modo de demonstração'
+      );
+
       indicador.title = 'Modo de demonstração';
     }
 
-    const avisoFechamento = obterElemento('closedBanner');
+    const avisoFechamento = obterElementoSeguro('closedBanner');
 
     if (avisoFechamento) {
       avisoFechamento.hidden = true;
@@ -275,20 +288,28 @@ const DesafioAnimeIGeek = (() => {
     );
 
     definirTexto('participants', '—');
-    definirTexto('totalNumbers', formatarNumero(CONFIG.totalNumeros));
-    definirTexto('availableNote', 'Disponibilidade ainda não confirmada');
+
+    definirTexto(
+      'totalNumbers',
+      formatarNumero(CONFIG.totalNumeros)
+    );
+
+    definirTexto(
+      'availableNote',
+      'Disponibilidade não confirmada'
+    );
 
     definirTexto('myNumbers', '0');
     definirTexto('ticketCount', '0');
 
     definirTexto(
       'ticketDescription',
-      'A emissão de bilhetes será ativada após a integração com o servidor.'
+      'A emissão de bilhetes será ativada após a integração segura com o servidor.'
     );
 
     definirTexto(
       'numberDescription',
-      'Grade demonstrativa. A disponibilidade real depende da conexão com o servidor.'
+      'Grade demonstrativa. A disponibilidade real dos números não está confirmada.'
     );
 
     definirTexto(
@@ -298,12 +319,12 @@ const DesafioAnimeIGeek = (() => {
 
     definirTexto(
       'carryoverDescription',
-      'Informações financeiras serão exibidas após a configuração do sistema.'
+      'As informações financeiras serão exibidas após a configuração do sistema.'
     );
 
     definirTexto(
       'regulationStatus',
-      'Regulamento e requisitos legais precisam ser validados antes do lançamento.'
+      'O regulamento e os requisitos legais precisam ser validados antes do lançamento.'
     );
   }
 
@@ -334,11 +355,10 @@ const DesafioAnimeIGeek = (() => {
       );
     }
 
-    if (state.filtro === 'disponiveis') {
-      numeros = numeros.filter(
-        item => item.status === 'disponivel'
-      );
-    }
+    /*
+      Não existe filtro de disponibilidade real neste modo.
+      Os números apresentados são apenas demonstrativos.
+    */
 
     return numeros;
   }
@@ -351,11 +371,11 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     8. GERAÇÃO DA GRADE
+     8. RENDERIZAÇÃO DA GRADE
   ======================================================= */
 
   function renderizarGrade() {
-    const grade = obterElemento('numberGrid');
+    const grade = obterElementoSeguro('numberGrid');
 
     if (!grade) {
       return;
@@ -379,16 +399,26 @@ const DesafioAnimeIGeek = (() => {
     );
 
     if (numerosDaPagina.length === 0) {
-      grade.innerHTML = `
-        <div class="number-grid-empty">
-          <strong>Nenhum número encontrado.</strong>
-          <p class="mt-1">
-            Verifique a pesquisa ou altere o filtro.
-          </p>
-        </div>
-      `;
+      const mensagem = document.createElement('div');
 
-      atualizarPaginacao(0, 0);
+      mensagem.className = 'number-grid-empty';
+
+      const titulo = document.createElement('strong');
+      titulo.textContent = 'Nenhum número encontrado.';
+
+      const descricao = document.createElement('p');
+      descricao.className = 'mt-1';
+      descricao.textContent =
+        'Verifique a pesquisa ou altere o filtro.';
+
+      mensagem.append(titulo, descricao);
+      grade.replaceChildren(mensagem);
+
+      atualizarPaginacao(
+        numerosFiltrados.length,
+        totalPaginas
+      );
+
       atualizarResumoGrade();
 
       return;
@@ -401,30 +431,30 @@ const DesafioAnimeIGeek = (() => {
 
       botao.type = 'button';
       botao.className = 'number-button available';
+
       botao.textContent = String(item.numero).padStart(3, '0');
 
       botao.dataset.number = String(item.numero);
 
       botao.setAttribute(
         'aria-label',
-        `Número ${item.numero}. Disponibilidade não confirmada.`
+        `Número ${item.numero}. Demonstração, sem reserva confirmada.`
       );
 
       botao.title =
-        'Demonstração visual: número ainda não reservado no servidor.';
+        'Demonstração visual: este número não está reservado no servidor.';
 
-      /*
-        A seleção serve apenas para demonstrar a interface.
-        Ela não reserva o número globalmente e não concede
-        participação no desafio.
-      */
+      const selecionado =
+        state.numerosSelecionados.has(item.numero);
 
-      if (state.numerosSelecionados.has(item.numero)) {
+      if (selecionado) {
         botao.classList.add('selected');
-        botao.setAttribute('aria-pressed', 'true');
-      } else {
-        botao.setAttribute('aria-pressed', 'false');
       }
+
+      botao.setAttribute(
+        'aria-pressed',
+        String(selecionado)
+      );
 
       botao.addEventListener('click', () => {
         selecionarNumero(item.numero);
@@ -444,13 +474,13 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     9. SELEÇÃO VISUAL DE NÚMEROS
+     9. SELEÇÃO VISUAL
   ======================================================= */
 
   function selecionarNumero(numero) {
     if (!CONFIG.modoDemonstracao) {
       mostrarToast(
-        'A seleção de números precisa ser validada pelo servidor.',
+        'A seleção precisa ser validada pelo servidor.',
         'warning'
       );
 
@@ -468,29 +498,25 @@ const DesafioAnimeIGeek = (() => {
       state.numerosSelecionados.add(numero);
 
       mostrarToast(
-        `Número ${numero} selecionado para demonstração.`,
+        `Número ${numero} selecionado apenas para demonstração.`,
         'success'
       );
     }
 
-    /*
-      Não usamos localStorage para transformar a seleção
-      em participação oficial. Os dados ficam somente
-      na memória desta página.
-    */
-
     renderizarGrade();
-    atualizarResumoGrade();
   }
 
   /* =======================================================
      10. PAGINAÇÃO
   ======================================================= */
 
-  function atualizarPaginacao(totalResultados, totalPaginas) {
-    const indicador = obterElemento('pageIndicator');
-    const anterior = obterElemento('previousPage');
-    const proximo = obterElemento('nextPage');
+  function atualizarPaginacao(
+    totalResultados,
+    totalPaginas
+  ) {
+    const indicador = obterElementoSeguro('pageIndicator');
+    const anterior = obterElementoSeguro('previousPage');
+    const proximo = obterElementoSeguro('nextPage');
 
     if (indicador) {
       indicador.textContent =
@@ -499,6 +525,7 @@ const DesafioAnimeIGeek = (() => {
 
     if (anterior) {
       anterior.disabled = state.paginaAtual <= 1;
+
       anterior.setAttribute(
         'aria-label',
         'Ir para a página anterior'
@@ -506,17 +533,21 @@ const DesafioAnimeIGeek = (() => {
     }
 
     if (proximo) {
-      proximo.disabled = state.paginaAtual >= totalPaginas;
+      proximo.disabled =
+        state.paginaAtual >= totalPaginas;
+
       proximo.setAttribute(
         'aria-label',
         'Ir para a próxima página'
       );
     }
 
-    definirTexto(
-      'gridSummary',
-      `${formatarNumero(totalResultados)} números na visualização`
-    );
+    /*
+      O resumo principal é atualizado em uma única função,
+      evitando que o texto seja sobrescrito por outra rotina.
+    */
+
+    atualizarResumoGrade(totalResultados);
   }
 
   function irParaPaginaAnterior() {
@@ -540,24 +571,35 @@ const DesafioAnimeIGeek = (() => {
      11. RESUMO DA GRADE
   ======================================================= */
 
-  function atualizarResumoGrade() {
+  function atualizarResumoGrade(totalResultados) {
     definirTexto(
       'myNumbers',
       String(state.numerosSelecionados.size)
     );
 
-    definirTexto(
-      'gridSummary',
-      `${formatarNumero(state.numerosSelecionados.size)} selecionados nesta demonstração`
-    );
+    const numerosFiltrados =
+      obterNumerosFiltrados();
 
-    const limpar = obterElemento('clearSearch');
+    const total = Number.isFinite(totalResultados)
+      ? totalResultados
+      : numerosFiltrados.length;
+
+    let resumo =
+      `${formatarNumero(total)} números na visualização`;
+
+    if (state.numerosSelecionados.size > 0) {
+      resumo +=
+        ` · ${formatarNumero(state.numerosSelecionados.size)} selecionados para demonstração`;
+    }
+
+    definirTexto('gridSummary', resumo);
+
+    const limpar = obterElementoSeguro('clearSearch');
 
     if (limpar) {
       limpar.hidden =
         state.pesquisa.length === 0 &&
-        state.filtro === 'todos' &&
-        state.numerosSelecionados.size === 0;
+        state.filtro === 'todos';
     }
   }
 
@@ -566,7 +608,7 @@ const DesafioAnimeIGeek = (() => {
   ======================================================= */
 
   function configurarPesquisa() {
-    const campo = obterElemento('searchNumber');
+    const campo = obterElementoSeguro('searchNumber');
 
     if (!campo) {
       return;
@@ -595,12 +637,7 @@ const DesafioAnimeIGeek = (() => {
   ======================================================= */
 
   function configurarFiltros() {
-    /*
-      Se o HTML tiver um seletor com id="numberFilter",
-      este código ativará os filtros correspondentes.
-    */
-
-    const filtro = obterElemento('numberFilter');
+    const filtro = obterElementoSeguro('numberFilter');
 
     if (!filtro) {
       return;
@@ -611,7 +648,6 @@ const DesafioAnimeIGeek = (() => {
 
       const filtrosPermitidos = [
         'todos',
-        'disponiveis',
         'selecionados'
       ];
 
@@ -626,7 +662,7 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     14. LIMPAR PESQUISA E SELEÇÃO
+     14. LIMPAR PESQUISA E FILTROS
   ======================================================= */
 
   function limparFiltros() {
@@ -634,25 +670,27 @@ const DesafioAnimeIGeek = (() => {
     state.filtro = 'todos';
     state.paginaAtual = 1;
 
-    const campo = obterElemento('searchNumber');
+    const campo = obterElementoSeguro('searchNumber');
 
     if (campo) {
       campo.value = '';
     }
 
-    const filtro = obterElemento('numberFilter');
+    const filtro = obterElementoSeguro('numberFilter');
 
     if (filtro) {
       filtro.value = 'todos';
     }
 
-    state.numerosSelecionados.clear();
+    /*
+      A seleção visual é preservada.
+      Limpar a pesquisa não deve apagar os números selecionados.
+    */
 
     renderizarGrade();
-    atualizarResumoGrade();
 
     mostrarToast(
-      'Pesquisa e seleção visual limpas.',
+      'Pesquisa e filtros limpos.',
       'info'
     );
   }
@@ -661,68 +699,95 @@ const DesafioAnimeIGeek = (() => {
      15. NOTIFICAÇÕES TOAST
   ======================================================= */
 
-  function mostrarToast(mensagem, tipo = 'info') {
-    const container = obterElemento('toast');
+  function mostrarToast(
+    mensagem,
+    tipo = 'info'
+  ) {
+    const container = obterElementoSeguro('toast');
 
     if (!container) {
-      console.info(`[Desafio Anime i Geek] ${mensagem}`);
+      console.info(
+        `[Desafio Anime i Geek] ${mensagem}`
+      );
+
       return;
     }
 
-    const toast = document.createElement('div');
-
-    toast.className = 'toast';
-
-    if (tipo === 'success') {
-      toast.classList.add('success');
-    } else if (tipo === 'error') {
-      toast.classList.add('error');
-    } else if (tipo === 'warning') {
-      toast.classList.add('warning');
-    }
-
-    const icone = document.createElement('span');
-    icone.className = 'toast-icon';
-
-    if (tipo === 'success') {
-      icone.textContent = '✓';
-    } else if (tipo === 'error') {
-      icone.textContent = '!';
-    } else if (tipo === 'warning') {
-      icone.textContent = '⚠';
-    } else {
-      icone.textContent = 'i';
-    }
-
-    const texto = document.createElement('span');
-    texto.className = 'toast-message';
-    texto.textContent = mensagem;
-
-    toast.append(icone, texto);
-
     /*
-      O HTML pode conter um elemento #toast.
-      Se ele for o próprio container de notificações,
-      as mensagens serão inseridas nele.
+      No HTML atual, #toast é o próprio elemento da notificação.
+      Portanto, não criamos outro toast dentro dele.
     */
 
-    container.appendChild(toast);
+    if (state.toastTemporizador) {
+      clearTimeout(state.toastTemporizador);
+      state.toastTemporizador = null;
+    }
 
-    window.setTimeout(() => {
-      toast.classList.add('toast-leave');
+    container.className = 'toast';
 
-      window.setTimeout(() => {
-        toast.remove();
+    if (tipo === 'success') {
+      container.classList.add('success');
+    } else if (tipo === 'error') {
+      container.classList.add('error');
+    } else if (tipo === 'warning') {
+      container.classList.add('warning');
+    }
+
+    const icones = {
+      success: '✓',
+      error: '!',
+      warning: '⚠',
+      info: 'i'
+    };
+
+    const icone = icones[tipo] || icones.info;
+
+    container.replaceChildren();
+
+    const iconeElemento = document.createElement('span');
+    iconeElemento.className = 'toast-icon';
+    iconeElemento.setAttribute('aria-hidden', 'true');
+    iconeElemento.textContent = icone;
+
+    const textoElemento = document.createElement('span');
+    textoElemento.className = 'toast-message';
+    textoElemento.textContent = mensagem;
+
+    container.append(
+      iconeElemento,
+      textoElemento
+    );
+
+    container.hidden = false;
+    container.setAttribute('role', 'status');
+    container.setAttribute('aria-live', 'polite');
+
+    container.classList.remove('toast-leave');
+
+    state.toastTemporizador = window.setTimeout(() => {
+      container.classList.add('toast-leave');
+
+      state.toastTemporizador = window.setTimeout(() => {
+        container.replaceChildren();
+        container.hidden = true;
+        container.classList.remove(
+          'success',
+          'error',
+          'warning',
+          'toast-leave'
+        );
+
+        state.toastTemporizador = null;
       }, 200);
-    }, 3500);
+    }, CONFIG.duracaoToast);
   }
 
   /* =======================================================
-     16. AÇÕES QUE AINDA DEPENDEM DO BACKEND
+     16. AÇÕES PENDENTES DE INTEGRAÇÃO
   ======================================================= */
 
   function configurarAcoesPendentes() {
-    const perfil = obterElemento('profileAction');
+    const perfil = obterElementoSeguro('profileAction');
 
     if (perfil) {
       perfil.addEventListener('click', evento => {
@@ -735,13 +800,22 @@ const DesafioAnimeIGeek = (() => {
       });
     }
 
-    /*
-      Não simulamos visualização de anúncios, receita,
-      pagamento ou emissão de bilhetes.
+    const perfilBotao = obterElementoSeguro('profileButton');
 
-      Essas ações só devem ser habilitadas depois que
-      o sistema estiver conectado ao Firebase e as
-      operações forem validadas no servidor.
+    if (perfilBotao) {
+      perfilBotao.addEventListener('click', evento => {
+        evento.preventDefault();
+
+        mostrarToast(
+          'A autenticação de usuários ainda não está configurada.',
+          'warning'
+        );
+      });
+    }
+
+    /*
+      Nenhum anúncio é considerado assistido.
+      Nenhum bilhete é emitido por esta versão.
     */
 
     const botoesDeBilhetes = document.querySelectorAll(
@@ -755,7 +829,7 @@ const DesafioAnimeIGeek = (() => {
         evento.preventDefault();
 
         mostrarToast(
-          'A emissão de bilhetes ainda não está ativa. A integração segura com o servidor é necessária.',
+          'A emissão de bilhetes ainda não está ativa. É necessária uma integração segura com o servidor.',
           'warning'
         );
       });
@@ -779,7 +853,8 @@ const DesafioAnimeIGeek = (() => {
           elementoAtivo.isContentEditable
         );
 
-      if (digitando) {
+      if (digitando || evento.altKey || evento.ctrlKey ||
+          evento.metaKey) {
         return;
       }
 
@@ -798,9 +873,9 @@ const DesafioAnimeIGeek = (() => {
   ======================================================= */
 
   function configurarBotoes() {
-    const anterior = obterElemento('previousPage');
-    const proximo = obterElemento('nextPage');
-    const limpar = obterElemento('clearSearch');
+    const anterior = obterElementoSeguro('previousPage');
+    const proximo = obterElementoSeguro('nextPage');
+    const limpar = obterElementoSeguro('clearSearch');
 
     if (anterior) {
       anterior.addEventListener(
@@ -825,19 +900,18 @@ const DesafioAnimeIGeek = (() => {
   }
 
   /* =======================================================
-     19. ATUALIZAÇÃO DO ANO NO RODAPÉ
+     19. ANO DO RODAPÉ
   ======================================================= */
 
   function atualizarAnoRodape() {
-    const ano = obterElemento('currentYear');
-
-    if (ano) {
-      ano.textContent = String(new Date().getFullYear());
-    }
+    definirTexto(
+      'currentYear',
+      new Date().getFullYear()
+    );
   }
 
   /* =======================================================
-     20. INICIALIZAÇÃO GERAL
+     20. INICIALIZAÇÃO
   ======================================================= */
 
   function iniciar() {
@@ -866,12 +940,16 @@ const DesafioAnimeIGeek = (() => {
     );
 
     console.info(
-      '[Desafio Anime i Geek] Modo de demonstração: os números não estão reservados no servidor.'
+      '[Desafio Anime i Geek] Modo de demonstração ativo.'
+    );
+
+    console.info(
+      '[Desafio Anime i Geek] Os números não estão reservados e a seleção não gera participação oficial.'
     );
   }
 
   /* =======================================================
-     21. API INTERNA
+     21. API PÚBLICA DO MÓDULO
   ======================================================= */
 
   return {
